@@ -1,0 +1,98 @@
+---
+
+jobs:
+  - name: build
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            trigger: true
+          - get: ci-image
+
+      - task: build
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                echo Building...
+                sleep 5
+                echo "build-family=my-precious-build" > build-metadata/keyval.properties
+                echo "OK!"
+
+      - put: build-metadata
+        params:
+          file: build-metadata/keyval.properties
+
+  - name: test
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            passed: [ build ]
+            trigger: true
+          - get: ci-image
+            passed: [ build ]
+
+      - task: test
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                echo Testing...
+                sleep 5
+                echo "OK!"
+
+  - name: ship
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            passed: [ test ]
+            trigger: true
+          - get: ci-image
+            passed: [ test ]
+
+      - task: ship
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                echo Shipping...
+                sleep 5
+                echo "OK!"
+
+resources:
+  - name: build-metadata
+    type: key-value
+    icon: database-outline
+
+  - name: git
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/gstackio/yasak.git
+
+  - name: ci-image
+    type: registry-image
+    icon: docker
+    source: { repository: busybox }
+
+
+resource_types:
+
+  - name: key-value
+    type: registry-image
+    source:
+      repository: swce/keyval-resource

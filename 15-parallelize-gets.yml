@@ -1,0 +1,83 @@
+---
+
+jobs:
+  - name: build
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            trigger: true
+          - get: ci-image
+
+      - task: build
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                echo Building...
+                sleep 10
+                echo "my-precious-build" > build-metadata/build-family
+                echo "OK!"
+
+  - name: test
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            passed: [ build ]
+            trigger: true
+          - get: ci-image
+            passed: [ build ]
+
+      - task: test
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                echo Testing...
+                sleep 10
+                echo "OK!"
+
+  - name: ship
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            passed: [ test ]
+            trigger: true
+          - get: ci-image
+            passed: [ test ]
+
+      - task: ship
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -c
+              - |
+                echo Shipping...
+                sleep 10
+                echo "OK!"
+
+resources:
+
+  - name: git
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/gstackio/yasak.git
+
+  - name: ci-image
+    type: registry-image
+    icon: docker
+    source: { repository: busybox }

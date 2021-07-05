@@ -1,0 +1,56 @@
+---
+
+jobs:
+  - name: build
+    serial: true
+    plan:
+      - get: git
+        trigger: true
+      - task: build
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: busybox }
+          run:
+            path: echo
+            args: [ building..., OK! ]
+
+  - name: test
+    serial: true
+    plan:
+      - get: git
+        passed: [ build ]
+        trigger: true
+      - task: test
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: busybox }
+          run:
+            path: echo
+            args: [ testing..., OK! ]
+
+  - name: ship
+    serial: true
+    plan:
+      - get: git
+        passed: [ test ]
+        trigger: true
+      - task: ship
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: busybox }
+          run:
+            path: echo
+            args: [ shipping..., OK! ]
+
+resources:
+
+  - name: git
+    type: git
+    source:
+      uri: https://github.com/gstackio/yasak.git

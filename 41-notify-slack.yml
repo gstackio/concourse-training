@@ -1,0 +1,124 @@
+---
+
+jobs:
+  - name: build
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            trigger: true
+          - get: ci-image
+          - get: common-tasks
+
+      - task: build
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -ec
+              - |
+                echo Building...
+                sleep 5
+                echo "OK!"
+
+      - task: echo-to-file
+        file: common-tasks/echo-to-file/task.yml
+        params:
+          MESSAGE: build-family=my-precious-build
+          FILENAME: keyval.properties
+        output_mapping:
+          output: build-metadata
+
+      - put: build-metadata
+        params:
+          file: build-metadata/keyval.properties
+
+  - name: test
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            passed: [ build ]
+            trigger: true
+          - get: ci-image
+            passed: [ build ]
+
+      - task: test
+        image: ci-image
+        config:
+          platform: linux
+          run:
+            path: sh
+            args:
+              - -ec
+              - |
+                echo Testing...
+                sleep 5
+                echo "OK!"
+
+  - name: ship
+    serial: true
+    plan:
+      - in_parallel:
+          - get: git
+            passed: [ test ]
+            trigger: true
+          - get: ci-image
+            passed: [ test ]
+          - get: build-metadata
+            passed: [ build ]
+
+      - task: ship
+        image: ci-image
+        config:
+          platform: linux
+          inputs:
+            - name: build-metadata
+          run:
+            path: sh
+            args:
+              - -ec
+              - |
+                echo Shipping...
+                grep "^build-family=" build-metadata/keyval.properties
+                sleep 5
+                echo "OK!"
+
+
+resources:
+
+  - name: common-tasks
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/EngineerBetter/concourse-tasks.git
+
+  - name: build-metadata
+    type: key-value
+    icon: database-outline
+
+  - name: git
+    type: git
+    icon: github
+    source:
+      uri: https://github.com/gstackio/yasak.git
+
+  - name: ci-image
+    type: registry-image
+    icon: docker
+    source: { repository: busybox }
+
+
+resource_types:
+
+  - name: slack-notifier
+    type: registry-image
+    source:
+      repository: mockersf/concourse-slack-notifier
+
+  - name: key-value
+    type: registry-image
+    source:
+      repository: swce/keyval-resource
