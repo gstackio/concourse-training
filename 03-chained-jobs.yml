@@ -51,4 +51,4 @@ resources:
   - name: git
     type: git
     source:
-      uri: https://github.com/gstackio/bosh-shadow-cpi-release.git
+      uri: https://github.com/gstackio/yasak.git

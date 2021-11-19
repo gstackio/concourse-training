@@ -246,6 +246,8 @@ resources:
     icon: github
     source:
       uri: https://github.com/gstackio/concourse-training-dummy.git
+    check_every: 24h
+    webhook_token: ((concourse-webhook-token))
 
   - name: integration
     type: git

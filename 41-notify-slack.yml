@@ -10,18 +10,24 @@ jobs:
           - get: ci-image
           - get: common-tasks
 
-      - task: build
-        image: ci-image
-        config:
-          platform: linux
-          run:
-            path: sh
-            args:
-              - -ec
-              - |
-                echo Building...
-                sleep 5
-                echo "OK!"
+      - try:
+          task: build
+          image: ci-image
+          config:
+            platform: linux
+            run:
+              path: sh
+              args:
+                - -ec
+                - |
+                  echo Building...
+                  sleep 5
+                  false
+                  echo "OK!"
+          on_failure:
+            put: notify-slack
+            params:
+              alert_type: failed
 
       - task: echo-to-file
         file: common-tasks/echo-to-file/task.yml
@@ -88,6 +94,10 @@ jobs:
 
 
 resources:
+  - name: notify-slack
+    type: slack-notifier
+    source:
+      url: ((slack-webhook))
 
   - name: common-tasks
     type: git

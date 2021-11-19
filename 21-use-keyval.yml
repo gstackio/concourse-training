@@ -18,16 +18,18 @@ jobs:
           run:
             path: sh
             args:
-              - -c
+              - -ec
               - |
                 echo Building...
                 sleep 5
-                echo "build-family=my-precious-build" > build-metadata/keyval.properties
+                echo "my-precious-build" > build-metadata/build-family
                 echo "OK!"
 
       - put: build-metadata
         params:
-          file: build-metadata/keyval.properties
+          directory: build-metadata
+          overrides:
+            build-family-plip: my-precious-build-plop
 
   - name: test
     serial: true
@@ -46,7 +48,7 @@ jobs:
           run:
             path: sh
             args:
-              - -c
+              - -ec
               - |
                 echo Testing...
                 sleep 5
@@ -73,10 +75,10 @@ jobs:
           run:
             path: sh
             args:
-              - -c
+              - -ec
               - |
                 echo Shipping...
-                grep "^build-family=" build-metadata/keyval.properties
+                cat build-metadata/build-family
                 sleep 5
                 echo "OK!"
 
@@ -102,4 +104,4 @@ resource_types:
   - name: key-value
     type: registry-image
     source:
-      repository: swce/keyval-resource
+      repository: gstack/keyval-resource
